@@ -15,19 +15,7 @@ namespace AdaptForm
         public SearchBox()
         {
             this.dictionary = new List<String>();
-            this.dictionary.Add("test");
-            this.dictionary.Add("testing");
-            this.dictionary.Add("good testing");
-            this.dictionary.Add("testaroo");
-            this.dictionary.Add("t");
-            this.dictionary.Add("something");
-            this.dictionary.Add("d");
-            this.dictionary.Add("a");
-
-        }
-        protected override void OnTextChanged(EventArgs e)
-        {
-            search();
+            this.TextChanged += search;
         }
         public void Add_Dictionary(List<String> dictionary)
         {
@@ -47,29 +35,36 @@ namespace AdaptForm
 
 
 
-        private void search()
+        private void search(object sender,EventArgs e)
         {
-            Debug.Print("here");
             List<String> query = (from item in dictionary
-                                    let score = LevenshteinDistance(this.Text,item)
-                                    orderby score ascending
+                                    let score = (Math.Max(item.Length, this.Text.Length) - LevenshteinDistance(this.Text,item)) / this.Text.Length
+                                    where score > .4
+                                    orderby score descending
                                     select item).Take(5).ToList();
             while (this.Items.Count > 0)
                 this.Items.RemoveAt(0);
+            if(query.Count > 0)
+            {
+                this.DroppedDown = true;
+            }
+            else
+            {
+                this.DroppedDown = false;
+            }
             foreach(String item in query)
             {
                 this.Items.Add(item);
             }
-            this.DroppedDown = true;
         }
 
 
 
-        private int LevenshteinDistance(string s, string t)
+        private double LevenshteinDistance(string s, string t)
         {
             int n = s.Length;
             int m = t.Length;
-            int[,] d = new int[n + 1, m + 1];
+            double[,] d = new double[n + 1, m + 1];
 
             // Step 1
             if (n == 0)
@@ -98,7 +93,7 @@ namespace AdaptForm
                 for (int j = 1; j <= m; j++)
                 {
                     // Step 5
-                    int cost = (t[j - 1] == s[i - 1]) ? 0 : 1;
+                    double cost = (t[j - 1] == s[i - 1]) ? 0 : 1;
 
                     // Step 6
                     d[i, j] = Math.Min(
